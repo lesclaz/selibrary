@@ -35,6 +35,7 @@ if (loginStatus == 0) {
     
 ## Funciones de la Clase UserPortal
 Una lista de las funciones que proporciona la clase `UserPortal` para interactuar con el [portal de usuario de nauta](https://www.portal.nauta.cu).
+
 | Funcion | Tipo | Parametros | Descripcion |
 |---------|------|------------|-------------|
 | initialice | `void` | No | Hace una conexión´inicial con el [portal](https://www.portal.nauta.cu/) para optener la infomacion necesaria para iniciar session|
