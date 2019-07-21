@@ -29,7 +29,7 @@ public class UserPortal {
 	urlRecharge = "https://www.portal.nauta.cu/useraaa/recharge_account";
 	private static String csrf = null;
 	private static Document page = null;
-	private static Map<String, String> cookies;
+	private static Map<String, String> cookies = null;
 	private static List<String> errors = new ArrayList<String>();
 	private static byte[] captcha = null;
 
@@ -42,7 +42,7 @@ public class UserPortal {
 		csrf = input.attr("value").toString();
 	}
 	
-	private void loadCAPTCHA (Map<String, String> cookies)
+	private void _loadCAPTCHA (Map<String, String> cookies)
 			throws IOException {
 		captcha = null;
 		captcha = Net.getCaptcha(urlCaptcha, cookies);
@@ -68,14 +68,20 @@ public class UserPortal {
 		preLogin();
 	}
 	
-	public void reloadCAPTCHA (Map<String, String> cookies)
+	public void loadCAPTCHA (Map<String, String> cookies)
 			throws IOException {
-		loadCAPTCHA(cookies);
+		if (cookies == null) {
+			preLogin();
+		}
+		_loadCAPTCHA(cookies);
 	}
 	
-	public void reloadCAPTCHA ()
+	public void loadCAPTCHA ()
 			throws IOException {
-		loadCAPTCHA(cookies);
+		if (cookies == null) {
+			preLogin();
+		}
+		_loadCAPTCHA(cookies);
 	}
 	
 	public void reload_userInfo (Map<String, String> cookies)
