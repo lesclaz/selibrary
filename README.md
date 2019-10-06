@@ -8,7 +8,7 @@ y el [Portal Cautivo](https://secure.etecsa.net:8443/) de nauta; asi como el
 [Portal Mi Cubacel](https://mi.cubacel.net), ahorrandoles tiempo, esfuerzos, neuronas y codigo a los desarrolladores.
  
 selibrary pretende ser no solo multiplataforma, sino tambien multilenguaje, echele un vistazo a
-[Pyselibrary](https://gitlab.home.asr/marilasoft/Pyselibrary/); la misma libreria escrita en Python.
+[Pyselibrary](https://github.com/marilasoft/PySELibrary/); la misma libreria escrita en Python.
 Esta, la version en Java usa la libreria [Jsoup](https://jsoup.org/) para el procesamiento de paginas web (los portales
 de [ETECSA](http://www.etecsa.cu)), mientras que la version en Python usa
 [BeautifulSoup4](http://www.crummy.com/software/BeautifulSoup/bs4/).
