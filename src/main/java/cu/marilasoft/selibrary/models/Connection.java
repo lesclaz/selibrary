@@ -12,7 +12,6 @@ public class Connection {
     private String _upLoad;
     private String _downLoad;
     private String _cost;
-    Calendar calendar = new GregorianCalendar();
 
     public Connection(String sessionInit, String sessionEnd, String time, String upLoad, String downLoad, String cost) {
         this._sessionInit = sessionInit;
