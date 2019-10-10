@@ -48,6 +48,7 @@ y hasta el momento solo es capaz de logearse y obtener alguna informacion del us
     * Fecha en la que se utilizo el servicio 'Adelanta Saldo' (si aun debe el saldo adelantado).
     * Saldo por pagar (si aun debe el saldo adelantado).
     * Numeros asociados al servicio 'Plan Amigo' (de existir estos).
+* Recupera y compra productos (`paquetes`) (`la compra de paquetes no ha sido probada aun.`)
 
 
 ## Ejemplos:
@@ -171,14 +172,17 @@ public class Test {
 
 ```java
 import cu.marilasoft.selibrary.MCPortal;
+import cu.marilasoft.selibrary.models.Product;
 
 import java.io.IOException;
+import java.util.List;
 
 public class Test {
 
     public static void main(String[] args) {
         MCPortal mcPortal = new MCPortal();
         try {
+            // Iniciando session y mostratndo info del usuario por pantalla
             mcPortal.login("55555555", "password");
             System.out.println(mcPortal.credit());
             System.out.println(mcPortal.phoneNumber());
@@ -188,6 +192,20 @@ public class Test {
             System.out.println(mcPortal.phoneNumberOne());
             System.out.println(mcPortal.phoneNumberTwo());
             System.out.println(mcPortal.phoneNumberTree());
+            // Recuperando productos y trantado de comprar el paquete de 1GB
+            List<Product> products = mcPortal.getProducts(mcPortal.getCookies());
+            for (Product product : products) {
+                if (product.title().equals("Paquete 1GB")){
+                    System.out.println(product.title());
+                    System.out.println(product.description());
+                    System.out.println(product.price());
+                    System.out.println(product.actions().get("mostInfo"));
+                    System.out.println(product.actions().get("buy"));
+                    mcPortal.buy(product.actions().get("buy"), mcPortal.getCookies());
+                    System.out.println(mcPortal.getStatus().get("status").toUpperCase() + ": " + mcPortal.getStatus()
+                            .get("msg"));
+                }
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
