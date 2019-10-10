@@ -1,25 +1,37 @@
 package cu.marilasoft.selibrary;
 
+import cu.marilasoft.selibrary.models.Product;
 import org.jsoup.Connection;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class MCPortal {
 
     private Document page;
     private Map<String, String> cookies = null;
-    private Map<String, String> cmPortalUrls = new HashMap<>();
+    private Map<String, String> mcPortalUrls = new HashMap<>();
+    private Map<String, String> status = new HashMap<>();
+    String urlBase = "https://mi.cubacel.net";
+
+    public Map<String, String> getCookies() {
+        return cookies;
+    }
+
+    public Map<String, String> getStatus() {
+        return status;
+    }
 
     public MCPortal() {
     }
 
     public void login(String userName, String password) throws IOException {
-        String urlBase = "https://mi.cubacel.net";
         Connection.Response response = Net.connection(urlBase, false).execute();
         page = response.parse();
         String urlSpanish = "";
@@ -40,16 +52,16 @@ public class MCPortal {
         for (Element li : lis) {
             switch (li.text()) {
                 case "Ofertas":
-                    cmPortalUrls.put("offers", urlBase + li.select("a").first().attr("href"));
+                    mcPortalUrls.put("offers", urlBase + li.select("a").first().attr("href"));
                     break;
                 case "Productos":
-                    cmPortalUrls.put("products", urlBase + li.select("a").first().attr("href"));
+                    mcPortalUrls.put("products", urlBase + li.select("a").first().attr("href"));
                     break;
                 case "Mi Cuenta":
-                    cmPortalUrls.put("myAccount", urlBase + li.select("a").first().attr("href"));
+                    mcPortalUrls.put("myAccount", urlBase + li.select("a").first().attr("href"));
                     break;
                 case "Soporte":
-                    cmPortalUrls.put("support", urlBase + li.select("a").first().attr("href"));
+                    mcPortalUrls.put("support", urlBase + li.select("a").first().attr("href"));
                     break;
             }
         }
@@ -69,7 +81,40 @@ public class MCPortal {
     }
 
     private void loadMyAccount() throws IOException {
-        page = Net.connection(cmPortalUrls.get("myAccount"), cookies, false).get();
+        page = Net.connection(mcPortalUrls.get("myAccount"), cookies, false).get();
+    }
+
+    private void loadProducts(Map<String, String> cookies) throws IOException {
+        page = Net.connection(mcPortalUrls.get("products"), cookies, false).get();
+    }
+
+    public void buy(String urlAction, Map<String, String> cookies) throws IOException {
+        page = Net.connection(urlBase + urlAction, cookies, false).get();
+        String buyUrl = page
+                .select("a[class=\"offerPresentationProductBuyLink_msdp button_style link_button\"]")
+                .first().attr("href");
+        page = Net.connection(urlBase + buyUrl, cookies, false).get();
+        String msg = page.select("div[class=\"products_purchase_details_block\"]").first().select("p")
+                .last().text();
+        status.clear();
+        if (msg.startsWith("Ha ocurrido un error.")) {
+            status.put("status", "error");
+            status.put("msg", msg);
+        } else {
+            status.put("status", "success");
+            status.put("msg", "Su solicitud esta siendo procesada.");
+        }
+    }
+
+    public List<Product> getProducts(Map<String, String> cookies) throws IOException {
+        List<Product> products = new ArrayList<>();
+        loadProducts(cookies);
+        Elements products_ = page.select("div[class=\"product_inner_block\"]");
+        for (Element product_ : products_) {
+            products.add(new Product(product_));
+        }
+
+        return products;
     }
 
     public String credit() {
