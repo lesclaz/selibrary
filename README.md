@@ -1,6 +1,6 @@
 selibrary
 =========
-## La libreria de SuitETECSA
+## Una librería de SuitETECSA
 
 selibrary fue creada para la [Comunidad Android de Cuba](https://jorgen.cubava.cu/), para facilitar el desarrollo de
 aplicaciones en Java y/o Android que interactuen con el [Portal de Usuario](https://www.portal.nauta.cu/),
@@ -38,76 +38,159 @@ Mientras que la clase CaptivePortal, la encargada de interactuar con el
 * Obtener informacion del usuario.
 * Acceder a los terminos de uso.
 
+La clase MCPortal es la encargada de interactuar con el [Portal Mi Cubacel](https://mi.cubacel.net),
+y hasta el momento solo es capaz de logearse y obtener alguna informacion del usuario.
+* Inicia session.
+* Recupera la informacion siguiente:
+    * Numero de telefono.
+    * Saldo.
+    * Fecha de expiracion del saldo.
+    * Fecha en la que se utilizo el servicio 'Adelanta Saldo' (si aun debe el saldo adelantado).
+    * Saldo por pagar (si aun debe el saldo adelantado).
+    * Numeros asociados al servicio 'Plan Amigo' (de existir estos).
+
 
 ## Ejemplos:
 
 ### Iniciando session con UserPortal
 
 ```java
-...
 import cu.marilasoft.selibrary.UserPortal;
-...
 
-    UserPortal session = new UserPortal();
-    String userName = "usuario@nauta.com.cu";
-    String password = "contraseña";
-    ...
-    // descarga la imagen CAPTCHA desde session.captchaImg
-    ...
-    String captchaCode;
-    // pidiendo y almacenando el codigo CAPTCHA
-    System.out.println("Introduzca el codigo de la imagen captcha: ");
-    Scanner teclado = new Scanner (System.in);
-    captchaCode = teclado.nextLine();
-    // la funfion login devuelve un entero, cero (0) si todo salio bien y uno (1)
-    // si hubieron errores
-    try {
-        int loginStatus = session.login(userName, password, captchaCode);
-        if (loginStatus == 0) {
-          // imprime el saldo de la cuanta logeada
-          System.out.print(session.credit());
-        } else {
-          for (String error : session.errors {
-            // imprime los errores encontrados
-            for(Object error : session.status.get("msg")) {
-                System.out.println(error);
+import java.io.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+
+public class Test {
+
+    private static void downloadCaptcha(byte[] captcha) {
+        try {
+            ByteArrayOutputStream out;
+            try (InputStream in = new BufferedInputStream(new ByteArrayInputStream(captcha))) {
+                out = new ByteArrayOutputStream();
+                byte[] buf = new byte[1024];
+                int n;
+                while (-1 != (n = in.read(buf))) {
+                    out.write(buf, 0, n);
+                }
+                out.close();
             }
-          }
+            byte[] response = out.toByteArray();
+            String ubicacion = "Captcha.png";
+            try (FileOutputStream fos = new FileOutputStream(ubicacion)) {
+                fos.write(response);
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace(System.out);
         }
-    } catch (IOException e) {
-        e.printStackTrace();
     }
+
+    public static void main(String[] args) {
+        UserPortal userPortal = new UserPortal();
+        Map<String, String> cookies;
+        try {
+            userPortal.preLogin();
+            cookies = userPortal.cookies();
+            userPortal.loadCAPTCHA(cookies);
+            downloadCaptcha(userPortal.captchaImg());
+            String userName = "usuario@nauta.com.cu";
+            String password = "password";
+            String captchaCode;
+            System.out.println("Introduzca el codigo de la imagen captcha: ");
+            @SuppressWarnings("resource")
+            Scanner teclado = new Scanner(System.in);
+            captchaCode = teclado.nextLine();
+            int loged = userPortal.login(userName, password, captchaCode, cookies);
+            if (loged == 0) {
+                System.out.println("Nombre de usuario: " + userPortal.userName());
+                System.out.println("Fecha de bloque: " + userPortal.blockDate());
+                System.out.println("Fecha de eliminacion: " + userPortal.delDate());
+                System.out.println("Tipo de cuenta: " + userPortal.accountType());
+                System.out.println("Tipo de servicio: " + userPortal.serviceType());
+                System.out.println("Saldo disponible: " + userPortal.credit());
+                System.out.println("Tiempo disponible: " + userPortal.time());
+                System.out.println("Cuenta de correo: " + userPortal.mailAccount());
+            } else {
+                System.out.println("Se han encontrado errores al iniciar session: ");
+                for (Object error : (List) userPortal.status().get("msg")) {
+                    System.out.println(error + ".");
+                }
+                System.exit(0);
+            }
+        } catch (IOException e) {
+            System.out.println("Hubieron errores al cargar...");
+            e.printStackTrace();
+        }
+    }
+}
 ```
 
 ### Iniciando session con CaptivePortal
 
 ```java
-...
 import cu.marilasoft.selibrary.CaptivePortal;
-...
 
-CaptivePortal session = new CaptivePortal();
-String userName = "usuario@nauta.com.cu";
-String password = "contraseña";
-    try {
+import java.io.IOException;
+import java.util.Map;
+
+public class Test {
+
+    public static void main(String[] args) {
+        CaptivePortal captivePortal = new CaptivePortal();
+        try {
             captivePortal.preLogin();
-            cookies = captivePortal.cookies();
-            Map<String, Object> sessionParameters;
-            int login = loginPortal.login(userName,
-                    password,
-                    cookies);
-            if (login != 1) {
-                sessionParameters = loginPortal.sessionParameters();
-                System.out.println(loginPortal.updateAvailableTime(
-                        (String) sessionParameters.get("updateTimeUrl"),
-                        cookies));
-                Thread.sleep(6);
-                int logout = loginPortal.logout((String) sessionParameters.get("logoutUrl"), cookies);
-                if (login != 1) {
-                    System.out.println((String) loginPortal.status().get("msg"));
+            String userName = "user@nauta.com.cu";
+            String password = "password";
+            Map<String, String> cookies = captivePortal.cookies();
+            int loged = captivePortal.login(userName, password, cookies);
+            if (loged == 0) {
+                Map<String, Object> sessionParameters = captivePortal.sessionParameters();
+                String udpateTimeUrl = (String) sessionParameters.get("updateTimeUrl");
+                System.out.println(captivePortal.updateAvailableTime(udpateTimeUrl, cookies));
+                try {
+                    Thread.sleep(5);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                int logout = captivePortal.logout((String) sessionParameters.get("logoutUrl"), cookies);
+                if (logout == 0) {
+                    System.out.println("SUCCESS: " + captivePortal.status().get("msg"));
+                } else {
+                    System.out.println("ERROR: " + captivePortal.status().get("msg"));
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+}
+```
+
+### Iniciando session con MCPortal
+
+```java
+import cu.marilasoft.selibrary.MCPortal;
+
+import java.io.IOException;
+
+public class Test {
+
+    public static void main(String[] args) {
+        MCPortal mcPortal = new MCPortal();
+        try {
+            mcPortal.login("55555555", "password");
+            System.out.println(mcPortal.credit());
+            System.out.println(mcPortal.phoneNumber());
+            System.out.println(mcPortal.expire());
+            System.out.println(mcPortal.date());
+            System.out.println(mcPortal.payableBalance());
+            System.out.println(mcPortal.phoneNumberOne());
+            System.out.println(mcPortal.phoneNumberTwo());
+            System.out.println(mcPortal.phoneNumberTree());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
 ```
