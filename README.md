@@ -40,12 +40,13 @@ Mientras que la clase CaptivePortal, la encargada de interactuar con el
 
 La clase MCPortal es la encargada de interactuar con el [Portal Mi Cubacel](https://mi.cubacel.net),
 y hasta el momento solo es capaz de logearse y obtener alguna informacion del usuario.
+Acciones que realiza:
 * Inicia session.
 * Recupera la informacion siguiente:
     * Numero de telefono.
     * Saldo.
     * Fecha de expiracion del saldo.
-    * Fecha en la que se utilizo el servicio 'Adelanta Saldo' (si aun debe el saldo adelantado).
+    * Fecha en la que se utilizo el servicio `Adelanta Saldo` (si aun debe el saldo adelantado).
     * Saldo por pagar (si aun debe el saldo adelantado).
     * Numeros asociados al servicio 'Plan Amigo' (de existir estos).
 * Recupera y compra productos (`paquetes`) (`la compra de paquetes no ha sido probada aun.`)
