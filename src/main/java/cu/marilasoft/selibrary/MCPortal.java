@@ -18,7 +18,10 @@ public class MCPortal {
     private Map<String, String> cookies = null;
     private Map<String, String> mcPortalUrls = new HashMap<>();
     private Map<String, String> status = new HashMap<>();
-    String urlBase = "https://mi.cubacel.net";
+    private String urlBase = "https://mi.cubacel.net";
+    private String credit, phoneNumber, expire, date, payableBalance,
+            phoneNumberOne, phoneNumberTwo, phoneNumberTree = null;
+    private boolean activeBonusServices;
 
     public Map<String, String> getCookies() {
         return cookies;
@@ -26,6 +29,46 @@ public class MCPortal {
 
     public Map<String, String> getStatus() {
         return status;
+    }
+
+    public Map<String, String> getMcPortalUrls() {
+        return mcPortalUrls;
+    }
+
+    public String getCredit() {
+        return credit;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public String getExpire() {
+        return expire;
+    }
+
+    public String getDate() {
+        return date;
+    }
+
+    public String getPayableBalance() {
+        return payableBalance;
+    }
+
+    public String getPhoneNumberOne() {
+        return phoneNumberOne;
+    }
+
+    public String getPhoneNumberTwo() {
+        return phoneNumberTwo;
+    }
+
+    public String getPhoneNumberTree() {
+        return phoneNumberTree;
+    }
+
+    public boolean isActiveBonusServices() {
+        return activeBonusServices;
     }
 
     public MCPortal() {
@@ -77,6 +120,9 @@ public class MCPortal {
         cookies = response.cookies();
 
         loadMyAccount();
+        mcPortalUrls.put("changeBonusServices", urlBase + page.select("form[id=\"toogle-internet\"]")
+                .first().attr("action"));
+        getInfoAccount();
 
     }
 
@@ -86,6 +132,18 @@ public class MCPortal {
 
     private void loadProducts(Map<String, String> cookies) throws IOException {
         page = Net.connection(mcPortalUrls.get("products"), cookies, false).get();
+    }
+
+    public void changeBonusCervices(boolean activeBonusServices, String urlAction,
+                                    Map<String, String> cookies) throws IOException {
+        Map<String, String> dataMap = new HashMap<>();
+        if (activeBonusServices) {
+            dataMap.put("onoffswitchctm", "off");
+        } else {
+            dataMap.put("onoffswitch", "on");
+            dataMap.put("onoffswitchctm", "on");
+        }
+        Net.connection(urlAction, cookies, dataMap, false).post();
     }
 
     public void buy(String urlAction, Map<String, String> cookies) throws IOException {
@@ -117,83 +175,81 @@ public class MCPortal {
         return products;
     }
 
-    public String credit() {
-        Elements divs_col = page.select("div[class=\"col2\"]");
-        for (Element div : divs_col) {
-            if (div.text().startsWith("Saldo: ")) {
-                return div.select("span[class=\"cvalue bold cuc-font\"]").first().text();
-            }
-        }
-        return null;
-    }
-
-    public String phoneNumber() {
-        Elements divs_col = page.select("div[class=\"col1\"]");
-        for (Element div : divs_col) {
+    private void getInfoAccount() {
+        Elements divs_col1 = page.select("div[class=\"col1\"]");
+        Elements divs_col2 = page.select("div[class=\"col2\"]");
+        Elements divs_col1a = page.select("div[class=\"col1a\"]");
+        Elements divs_col2a = page.select("div[class=\"col2a\"]");
+        Element phForm1 = page.select("form[id=\"phForm1\"]").first();
+        Element phForm2 = page.select("form[id=\"phForm2\"]").first();
+        Element phForm3 = page.select("form[id=\"phForm3\"]").first();
+        String script = page.select("script").last().data();
+        // Asignando valor a phoneNumber
+        for (Element div : divs_col1) {
             if (div.text().startsWith("Número de Teléfono: ")) {
-                return div.select("span[class=\"cvalue\"]").first().text();
+                phoneNumber = div.select("span[class=\"cvalue\"]").first().text();
             }
         }
-        return null;
-    }
-
-    public String expire() {
-        Elements divs_col = page.select("div[class=\"col2\"]");
-        for (Element div : divs_col) {
-            if (div.text().startsWith("Expira: ")) {
-                return div.select("span[class=\"cvalue\"]").first().text();
+        // Asignando valor a credit y expire
+        for (Element div : divs_col2) {
+            if (div.text().startsWith("Saldo: ")) {
+                credit = div.select("span[class=\"cvalue bold cuc-font\"]").first().text();
+            } else if (div.text().startsWith("Expira: ")) {
+                expire = div.select("span[class=\"cvalue\"]").first().text();
             }
         }
-        return null;
-    }
-
-    public String date() {
-        Elements divs_col = page.select("div[class=\"col1a\"]");
-        for (Element div : divs_col) {
+        // Asignando valor a date
+        for (Element div : divs_col1a) {
             if (div.text().startsWith("Fecha del Adelanto: ")) {
-                return div.select("span[class=\"cvalue bold\"]").first().text();
+                date = div.select("span[class=\"cvalue bold\"]").first().text();
             }
         }
-        return null;
-    }
-
-    public String payableBalance() {
-        Elements divs_col = page.select("div[class=\"col2a\"]");
-        for (Element div : divs_col) {
+        // Asignando valor a payableBalance
+        for (Element div : divs_col2a) {
             if (div.text().startsWith("Saldo pendiente por pagar: ")) {
-                return div.select("span[class=\"cvalue bold cuc-font\"]").first().text();
+                payableBalance = div.select("span[class=\"cvalue bold cuc-font\"]").first().text();
             }
         }
-        return null;
-    }
-
-    public String phoneNumberOne() {
-        Element form_ph1 = page.select("form[id=\"phForm1\"]").first();
-        for (Element input_ : form_ph1.select("input[type=\"hidden\"]")) {
+        // Asignando valor a phoneNumberOne
+        for (Element input_ : phForm1.select("input[type=\"hidden\"]")) {
             if (input_.attr("id").equals("cancelFlag")) {
-                return input_.attr("value");
+                phoneNumberOne = input_.attr("value");
             }
         }
-        return null;
-    }
-
-    public String phoneNumberTwo() {
-        Element form_ph1 = page.select("form[id=\"phForm2\"]").first();
-        for (Element input_ : form_ph1.select("input[type=\"hidden\"]")) {
+        // Asignando valor a phoneNumberTwo
+        for (Element input_ : phForm2.select("input[type=\"hidden\"]")) {
             if (input_.attr("id").equals("cancelFlag")) {
-                return input_.attr("value");
+                phoneNumberTwo = input_.attr("value");
             }
         }
-        return null;
-    }
-
-    public String phoneNumberTree() {
-        Element form_ph1 = page.select("form[id=\"phForm3\"]").first();
-        for (Element input_ : form_ph1.select("input[type=\"hidden\"]")) {
+        // Asignando valor a phoneNumberTree
+        for (Element input_ : phForm3.select("input[type=\"hidden\"]")) {
             if (input_.attr("id").equals("cancelFlag")) {
-                return input_.attr("value");
+                phoneNumberTree = input_.attr("value");
             }
         }
-        return null;
+        // Asignando valor a activeBonusServices
+        int indexOf;
+        String substring = "";
+        String onOff = "";
+        int indexOf2 = script.indexOf("'false'; prop=");
+        if (indexOf2 != -1) {
+            substring = script.substring(indexOf2);
+        }
+        indexOf2 = substring.indexOf("prop=");
+        if (indexOf2 != -1) {
+            substring = substring.substring(indexOf2);
+            indexOf = substring.indexOf(";");
+            if (indexOf != -1) {
+                onOff = substring.substring(0, indexOf);
+                onOff = onOff.split("=")[1].replace("'", "");
+                System.out.println("Hasta aqui todo bien");
+                if (onOff.equalsIgnoreCase("true")) {
+                    activeBonusServices = true;
+                } else {
+                    activeBonusServices = false;
+                }
+            }
+        }
     }
 }
