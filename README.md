@@ -183,20 +183,32 @@ public class Test {
     public static void main(String[] args) {
         MCPortal mcPortal = new MCPortal();
         try {
-            // Iniciando session y mostratndo info del usuario por pantalla
+            // Iniciando session y mostrarndo informacion del usuario por pantalla
             mcPortal.login("55555555", "password");
-            System.out.println(mcPortal.credit());
-            System.out.println(mcPortal.phoneNumber());
-            System.out.println(mcPortal.expire());
-            System.out.println(mcPortal.date());
-            System.out.println(mcPortal.payableBalance());
-            System.out.println(mcPortal.phoneNumberOne());
-            System.out.println(mcPortal.phoneNumberTwo());
-            System.out.println(mcPortal.phoneNumberTree());
-            // Recuperando productos y trantado de comprar el paquete de 1GB
+            System.out.println(mcPortal.getCredit());
+            System.out.println(mcPortal.getPhoneNumber());
+            System.out.println(mcPortal.getExpire());
+            System.out.println(mcPortal.getDate());
+            System.out.println(mcPortal.getPayableBalance());
+            System.out.println(mcPortal.getPhoneNumberOne());
+            System.out.println(mcPortal.getPhoneNumberTwo());
+            System.out.println(mcPortal.getPhoneNumberTree());
+            // Cabiando estado de tarifa por consumo
+            if (mcPortal.isActiveBonusServices()) {
+                System.out.println("La tarifa por consumo esta activada.");
+                System.out.println("Desactivandola...");
+                mcPortal.changeBonusCervices(mcPortal.isActiveBonusServices(),
+                        mcPortal.getMcPortalUrls().get("changeBonusServices"), mcPortal.getCookies());
+            } else {
+                System.out.println("La tarifa por consumo esta desativada.");
+                System.out.println("Activandola...");
+                mcPortal.changeBonusCervices(mcPortal.isActiveBonusServices(),
+                        mcPortal.getMcPortalUrls().get("changeBonusServices"), mcPortal.getCookies());
+            }
+            // Recuperando pruductos y tratando de conprar el primero de la lista
             List<Product> products = mcPortal.getProducts(mcPortal.getCookies());
             for (Product product : products) {
-                if (product.title().equals("Paquete 1GB")){
+                if (product.title().equals("Paquete 1GB")) {
                     System.out.println(product.title());
                     System.out.println(product.description());
                     System.out.println(product.price());
@@ -212,4 +224,5 @@ public class Test {
         }
     }
 }
+
 ```
