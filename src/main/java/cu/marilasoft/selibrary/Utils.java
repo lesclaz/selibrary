@@ -13,6 +13,10 @@ import java.util.Map;
 
 public class Utils {
 
+    static int creditToInt(String credit) {
+        return Integer.parseInt(credit.replace("$", "").replace(" CUC", "").replace(",", ""));
+    }
+
     static Element getCardPanel(Document page) {
 
         return page.select("div.card-panel").first();
@@ -49,14 +53,14 @@ public class Utils {
     }
 
     static List<String> findError(Document page, String _type) {
-        String replace_text, replace_text_one, replace_text_two;
+        String replace_text = null, replace_text_one = null, replace_text_two = null;
         List<String> errors = new ArrayList<>();
 
         if (_type.equals("IP")) {
             replace_text = "\r\n       \talert";
             replace_text_one = "\r\n       \talert(\"";
             replace_text_two = "\");\r\n   \t";
-        } else {
+        } else if (_type.equalsIgnoreCase("UP")) {
             replace_text = "toastr.error";
             replace_text_one = "toastr.error('";
             replace_text_two = "');";
@@ -64,6 +68,7 @@ public class Utils {
 
         Element lastScript = page.select("script[type='text/javascript']")
                 .last();
+        assert replace_text != null;
         if (lastScript.data().startsWith(replace_text)) {
             Document data = Jsoup.parse(lastScript.data()
                     .replace(replace_text_one, "")
