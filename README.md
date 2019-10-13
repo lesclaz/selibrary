@@ -3,20 +3,20 @@ selibrary
 ## Una librería de SuitETECSA
 
 selibrary fue creada para la [Comunidad Android de Cuba](https://jorgen.cubava.cu/), para facilitar el desarrollo de
-aplicaciones en Java y/o Android que interactuen con el [Portal de Usuario](https://www.portal.nauta.cu/),
-y el [Portal Cautivo](https://secure.etecsa.net:8443/) de nauta; asi como el
-[Portal Mi Cubacel](https://mi.cubacel.net), ahorrandoles tiempo, esfuerzos, neuronas y codigo a los desarrolladores.
+aplicaciones en Java y/o Android que interactúen con el [Portal de Usuario](https://www.portal.nauta.cu/),
+y el [Portal Cautivo](https://secure.etecsa.net:8443/) de nauta; así como el
+[Portal Mi Cubacel](https://mi.cubacel.net), ahorrándoles tiempo, esfuerzos, neuronas y código a los desarrolladores.
  
-selibrary pretende ser no solo multiplataforma, sino tambien multilenguaje, echele un vistazo a
-[PySELibrary](https://github.com/marilasoft/PySELibrary/); la misma libreria escrita en Python.
-Esta, la version en Java usa la libreria [Jsoup](https://jsoup.org/) para el procesamiento de paginas web (los portales
-de [ETECSA](http://www.etecsa.cu)), mientras que la version en Python usa
+selibrary pretende ser no solo multiplataforma, sino también multilenguaje, échele un vistazo a
+[PySELibrary](https://github.com/marilasoft/PySELibrary/); la misma librería escrita en Python.
+Esta, la versión en Java usa la librería [Jsoup](https://jsoup.org/) para el procesamiento de paginas web (los portales
+de [ETECSA](http://www.etecsa.cu)), mientras que la versión en Python usa
 [BeautifulSoup4](http://www.crummy.com/software/BeautifulSoup/bs4/).
 
 Por el momento selibrary a logrado implementar 10 funciones que representan el 100% de
 las operaciones que permite realizar el [Portal de Usuario](https://www.portal.nauta.cu/) nauta en las cuentas no
 asociadas a Nauta Hogar, estas son:
-* Iniciar session.
+* Iniciar sesión.
 * Obtener la información de la cuenta.
 * Recargar la cuenta.
 * Transferir saldo a otra cuenta nauta.
@@ -25,36 +25,42 @@ asociadas a Nauta Hogar, estas son:
 * Obtener el histórico de conexiones por meses.
 * Obtener el histórico de recargas por meses.
 * Obtener el histórico de transferencias por meses.
-* Cerrar session.
+* Cerrar sesión.
 
 Aún falta por implementar:
 * Pagar servicio de Nauta Hogar (`en cuentas asociadas a este servicio`).
 
 Mientras que la clase CaptivePortal, la encargada de interactuar con el 
 [Portal Cautivo](https://secure.etecsa.net:8443/) de nauta, provee las siguientes funciones:
-* Iniciar Session.
+* Iniciar sesión.
 * Actualizar tiempo disponible.
-* Cerrar session.
-* Obtener informacion del usuario.
-* Acceder a los terminos de uso.
+* Cerrar sesión.
+* Obtener información del usuario.
+* Acceder a los términos de uso.
 
 La clase MCPortal es la encargada de interactuar con el [Portal Mi Cubacel](https://mi.cubacel.net),
-y hasta el momento solo es capaz de logearse y obtener alguna informacion del usuario.
-Acciones que realiza:
-* Inicia session.
-* Recupera la informacion siguiente:
-    * Numero de telefono.
+y hasta el momento solo es capaz de realizar las siguientes operaciones:
+* Inicia sesión.
+* Recupera la información siguiente:
+    * Número de teléfono.
     * Saldo.
-    * Fecha de expiracion del saldo.
-    * Fecha en la que se utilizo el servicio `Adelanta Saldo` (si aun debe el saldo adelantado).
-    * Saldo por pagar (si aun debe el saldo adelantado).
-    * Numeros asociados al servicio 'Plan Amigo' (de existir estos).
-* Recupera y compra productos (`paquetes`) (`la compra de paquetes no ha sido probada aun.`)
+    * Fecha de expiración del saldo.
+    * Fecha en la que se utilizó el servicio `Adelanta Saldo` (si aún debe el saldo adelantado).
+    * Saldo por pagar (si aún debe el saldo adelantado).
+    * Números asociados al servicio 'Plan Amigo' (de existir estos).
+    * Estado de la tarifa por consumo.
+* Cambia estado de la tarifa por consumo.
+* Recupera y compra productos (`paquetes`) (`la compra de paquetes no ha sido probada aún.`)
+* Restablece contraseña olvidada.
+* Registra un usuario nuevo en el portal.
+
+MCPortal se encuentra en fase experimental, por lo que aún no maneja muchos de los errores que puedan
+producirse en el proceso de cualquiera de la operaciones implementadas.
 
 
 ## Ejemplos:
 
-### Iniciando session con UserPortal
+### Iniciando sesión con UserPortal
 
 ```java
 import cu.marilasoft.selibrary.UserPortal;
@@ -93,32 +99,36 @@ public class Test {
         Map<String, String> cookies;
         try {
             userPortal.preLogin();
-            cookies = userPortal.cookies();
+            cookies = userPortal.getCookies();
             userPortal.loadCAPTCHA(cookies);
-            downloadCaptcha(userPortal.captchaImg());
-            String userName = "usuario@nauta.com.cu";
+            downloadCaptcha(userPortal.getCaptchaImg());
+            String userName = "user@nauta.com.cu";
             String password = "password";
             String captchaCode;
-            System.out.println("Introduzca el codigo de la imagen captcha: ");
+            System.out.println("Introduzca el código de la imagen captcha: ");
             @SuppressWarnings("resource")
-            Scanner teclado = new Scanner(System.in);
-            captchaCode = teclado.nextLine();
-            int loged = userPortal.login(userName, password, captchaCode, cookies);
-            if (loged == 0) {
-                System.out.println("Nombre de usuario: " + userPortal.userName());
-                System.out.println("Fecha de bloque: " + userPortal.blockDate());
-                System.out.println("Fecha de eliminacion: " + userPortal.delDate());
-                System.out.println("Tipo de cuenta: " + userPortal.accountType());
-                System.out.println("Tipo de servicio: " + userPortal.serviceType());
-                System.out.println("Saldo disponible: " + userPortal.credit());
-                System.out.println("Tiempo disponible: " + userPortal.time());
-                System.out.println("Cuenta de correo: " + userPortal.mailAccount());
-            } else {
-                System.out.println("Se han encontrado errores al iniciar session: ");
-                for (Object error : (List) userPortal.status().get("msg")) {
+            Scanner keyMap = new Scanner(System.in);
+            captchaCode = keyMap.nextLine();
+            userPortal.login(userName, password, captchaCode, cookies);
+            if (userPortal.getStatus().get("function").equals("login") &&
+            userPortal.getStatus().get("status").equals("success")) {
+                System.out.println("Nombre de usuario: " + userPortal.getUserName());
+                System.out.println("Fecha de bloque: " + userPortal.getBlockDate());
+                System.out.println("Fecha de eliminacion: " + userPortal.getDelDate());
+                System.out.println("Tipo de cuenta: " + userPortal.getAccountType());
+                System.out.println("Tipo de servicio: " + userPortal.getServiceType());
+                System.out.println("Saldo disponible: " + userPortal.getCredit());
+                System.out.println("Tiempo disponible: " + userPortal.getTime());
+                System.out.println("Cuenta de correo: " + userPortal.getMailAccount());
+            } else if (userPortal.getStatus().get("function").equals("login") &&
+            userPortal.getStatus().get("status").equals("error")) {
+                System.out.println("Se han encontrado errores al iniciar sesión: ");
+                for (Object error : (List) userPortal.getStatus().get("msg")) {
                     System.out.println(error + ".");
                 }
                 System.exit(0);
+            } else {
+                System.out.println("Se ha producido un error desconocido!");
             }
         } catch (IOException e) {
             System.out.println("Hubieron errores al cargar...");
@@ -126,9 +136,10 @@ public class Test {
         }
     }
 }
+
 ```
 
-### Iniciando session con CaptivePortal
+### Iniciando sesión con CaptivePortal
 
 ```java
 import cu.marilasoft.selibrary.CaptivePortal;
@@ -169,56 +180,31 @@ public class Test {
 }
 ```
 
-### Iniciando session con MCPortal
+### Resgistro con MCPortal
 
 ```java
 import cu.marilasoft.selibrary.MCPortal;
-import cu.marilasoft.selibrary.models.Product;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Scanner;
 
 public class Test {
 
     public static void main(String[] args) {
         MCPortal mcPortal = new MCPortal();
         try {
-            // Iniciando session y mostrarndo informacion del usuario por pantalla
-            mcPortal.login("55555555", "password");
-            System.out.println(mcPortal.getCredit());
-            System.out.println(mcPortal.getPhoneNumber());
-            System.out.println(mcPortal.getExpire());
-            System.out.println(mcPortal.getDate());
-            System.out.println(mcPortal.getPayableBalance());
-            System.out.println(mcPortal.getPhoneNumberOne());
-            System.out.println(mcPortal.getPhoneNumberTwo());
-            System.out.println(mcPortal.getPhoneNumberTree());
-            // Cabiando estado de tarifa por consumo
-            if (mcPortal.isActiveBonusServices()) {
-                System.out.println("La tarifa por consumo esta activada.");
-                System.out.println("Desactivandola...");
-                mcPortal.changeBonusCervices(mcPortal.isActiveBonusServices(),
-                        mcPortal.getMcPortalUrls().get("changeBonusServices"), mcPortal.getCookies());
+            mcPortal.singUp("55555555", "Nomre", "Apellido", "user@email.com");
+            System.out.println("Introduzca el código enviado a su teléfono: ");
+            @SuppressWarnings("resource")
+            Scanner keyMap = new Scanner(System.in);
+            String code = keyMap.nextLine();
+            mcPortal.completeSingUp(code, "password", mcPortal.getCookies());
+            if (mcPortal.getStatus().get("status").equalsIgnoreCase("success")) {
+                System.out.print("SUCCESS :: ");
             } else {
-                System.out.println("La tarifa por consumo esta desativada.");
-                System.out.println("Activandola...");
-                mcPortal.changeBonusCervices(mcPortal.isActiveBonusServices(),
-                        mcPortal.getMcPortalUrls().get("changeBonusServices"), mcPortal.getCookies());
+                System.out.print("ERROR :: ");
             }
-            // Recuperando pruductos y tratando de conprar el primero de la lista
-            List<Product> products = mcPortal.getProducts(mcPortal.getCookies());
-            for (Product product : products) {
-                if (product.title().equals("Paquete 1GB")) {
-                    System.out.println(product.title());
-                    System.out.println(product.description());
-                    System.out.println(product.price());
-                    System.out.println(product.actions().get("mostInfo"));
-                    System.out.println(product.actions().get("buy"));
-                    mcPortal.buy(product.actions().get("buy"), mcPortal.getCookies());
-                    System.out.println(mcPortal.getStatus().get("status").toUpperCase() + ": " + mcPortal.getStatus()
-                            .get("msg"));
-                }
-            }
+            System.out.println(mcPortal.getStatus().get("msg"));
         } catch (IOException e) {
             e.printStackTrace();
         }
