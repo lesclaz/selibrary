@@ -13,48 +13,103 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 import java.util.Map;
 
-class Net {
+public class Net {
 
     private static Connection connection(String url) {
 
-        return Jsoup.connect(url).userAgent("Mozilla/5.0").timeout(100000);
+        return Jsoup.connect(url).userAgent("Mozilla/5.0").timeout(100000)
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                .header("Accept-Language", "es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3")
+                .header("Accept-Encoding", "gzip, deflate, br");
     }
 
+    /**
+     * Connection connection
+     *
+     * @param url    string url of the server to connect
+     * @param verify if verify SSL Cert
+     * @return a Jsoup connection
+     */
     static Connection connection(String url, boolean verify) {
-        if (!verify) {
+        if (verify) {
             return Jsoup.connect(url).userAgent("Mozilla/5.0").timeout(100000)
+                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                    .header("Accept-Language", "es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3")
+                    .header("Accept-Encoding", "gzip, deflate, br")
                     .sslSocketFactory(socketFactory());
         } else {
             return connection(url);
         }
     }
 
+    /**
+     * Connection connection
+     *
+     * @param url string url of the server to connect
+     * @param cookies cookies of session
+     * @return a Jsoup connection
+     */
     static Connection connection(String url, Map<String, String> cookies) {
 
         return Jsoup.connect(url).userAgent("Mozilla/5.0").timeout(100000)
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                .header("Accept-Language", "es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3")
+                .header("Accept-Encoding", "gzip, deflate, br")
                 .cookies(cookies);
     }
 
-    static Connection connection(String url, Map<String, String> cookies, boolean verify) {
+    /**
+     * Connection connection
+     *
+     * @param url     string url of the server to connect
+     * @param cookies cookies of session
+     * @param verify  if verify SSL Cert
+     * @return a Jsoup connection
+     */
+    public static Connection connection(String url, Map<String, String> cookies, boolean verify) {
         if (!verify) {
             return Jsoup.connect(url).userAgent("Mozilla/5.0").timeout(100000)
+                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                    .header("Accept-Language", "es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3")
+                    .header("Accept-Encoding", "gzip, deflate, br")
                     .cookies(cookies).sslSocketFactory(socketFactory());
         } else {
             return connection(url, cookies);
         }
     }
 
+    /**
+     * Connection connection
+     *
+     * @param url string url of the server to connect
+     * @param cookies cookies of session
+     * @param dataMap data map for POST request
+     * @return a Jsoup connection
+     */
     static Connection connection(String url, Map<String, String> cookies,
                                  Map<String, String> dataMap) {
 
         return Jsoup.connect(url).userAgent("Mozilla/5.0").timeout(100000)
+                .header("Accept-Language", "es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3")
                 .cookies(cookies).data(dataMap);
     }
 
+    /**
+     * Connection connection
+     *
+     * @param url string url of the server to connect
+     * @param cookies cookies of session
+     * @param dataMap data map for POST request
+     * @param verify if verify SSL Cert
+     * @return a Jsoup connection
+     */
     static Connection connection(String url, Map<String, String> cookies,
                                  Map<String, String> dataMap, boolean verify) {
         if (!verify) {
             return Jsoup.connect(url).userAgent("Mozilla/5.0").timeout(100000)
+                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                    .header("Accept-Language", "es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3")
+                    .header("Accept-Encoding", "gzip, deflate, br")
                     .cookies(cookies).data(dataMap).sslSocketFactory(socketFactory());
         } else {
             return connection(url, cookies, dataMap);
@@ -83,17 +138,33 @@ class Net {
         }
     }
 
-    ;
-
+    /**
+     * cookies of session
+     *
+     * @param url string url of the server to connect
+     * @return cookies map
+     * @throws IOException if connection fail
+     */
     static Map<String, String> getCookies(String url) throws IOException {
 
         return connection(url).execute().cookies();
     }
 
+    /**
+     * Captcha image in bytes format
+     *
+     * @param url string url of the server to connect
+     * @param cookies cookies of session
+     * @return captcha image in bytes format
+     * @throws IOException if connection fail
+     */
     static byte[] getCaptcha(String url, Map<String, String> cookies)
             throws IOException {
 
-        return Jsoup.connect(url).header("Accept-Encoding", "gzip, deflate")
+        return Jsoup.connect(url)
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                .header("Accept-Language", "es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3")
+                .header("Accept-Encoding", "gzip, deflate, br")
                 .ignoreContentType(true).timeout(25000).cookies(cookies)
                 .execute().bodyAsBytes();
     }

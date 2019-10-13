@@ -25,24 +25,66 @@ public class UserPortal {
     private static Map<Object, Object> status = new HashMap<>();
     private static List<String> errors = new ArrayList<>();
 
-    private byte[] captchaImg;
+    private String userName, blockDate, delDate, accountType, serviceType, credit, time, mailAccount = null;
 
-    // Devuelve la imagen captcha en formato de bytes
-    public byte[] captchaImg() {
+    private byte[] captchaImg = null;
+
+    // return captchaImg in bytes format
+    public byte[] getCaptchaImg() {
         return captchaImg;
     }
 
-    // Devuelve el contenido de la variable status
-    public Map<Object, Object> status() {
+    // return status
+    public Map<Object, Object> getStatus() {
         return status;
     }
 
-    // Devuelve las cookies
-    public Map<String, String> cookies() {
+    // return cookies
+    public Map<String, String> getCookies() {
         return cookies;
     }
 
-    // Carga el codigo csrf
+    // return userName
+    public String getUserName() {
+        return userName;
+    }
+
+    // return blockDate
+    public String getBlockDate() {
+        return blockDate;
+    }
+
+    // return delDate
+    public String getDelDate() {
+        return delDate;
+    }
+
+    // return accountType
+    public String getAccountType() {
+        return accountType;
+    }
+
+    // return serviceType
+    public String getServiceType() {
+        return serviceType;
+    }
+
+    // return credit
+    public String getCredit() {
+        return credit;
+    }
+
+    // return time
+    public String getTime() {
+        return time;
+    }
+
+    // return mailAccount
+    public String getMailAccount() {
+        return mailAccount;
+    }
+
+    // load csrf code
     private static void getCSRF(String url, Map<String, String> cookies)
             throws IOException {
         page = Net.connection(url, cookies).get();
@@ -50,7 +92,7 @@ public class UserPortal {
         csrf = input.attr("value");
     }
 
-    // Descarga la imagen captcha en formato de bytes
+    // save captchaImg in bytes format
     public void loadCAPTCHA(Map<String, String> cookies)
             throws IOException {
         byte[] captcha;
@@ -59,14 +101,14 @@ public class UserPortal {
         captchaImg = captcha;
     }
 
-    // Llama a la funcion getCSRF
+    // call to function getCSRF for load the login page
     private static void loadLogin(Map<String, String> cookies)
             throws IOException {
         getCSRF(urlLogin, cookies);
     }
 
-    // Carga las cookies y llama a la funcion loadLogin
-    public static void preLogin() throws IOException {
+    // save cookies and call to function getCSRF for load the login page
+    public void preLogin() throws IOException {
         cookies = Net.getCookies(urlLogin);
         loadLogin(cookies);
     }
@@ -76,33 +118,29 @@ public class UserPortal {
 
     }
 
-    // Recarga la informacion del usuario
-    public int reload_userInfo(Map<String, String> cookies)
+    // reload the user info
+    public void reloadUserInfo(Map<String, String> cookies)
             throws IOException {
-        int ret = 0;
         String urlUserInfo = "https://www.portal.nauta.cu/useraaa/user_info";
         page = Net.connection(urlUserInfo, cookies).get();
 
-        /* Se buscan errors en el proceso, y dependiendo del resultado de la busqueda
-         * almacena el resultado de la ejecucion en la variable status */
+        // finding errors
         status.clear();
+        status.put("function", "reloadUserInfo");
         if (findError(page, "UP").size() != 0) {
-            ret = 1;
-            errors.clear();
             errors = findError(page, "UP");
             status.put("status", "error");
             status.put("msg", errors);
         } else {
             status.put("status", "success");
-            status.put("msg", findSuccess(page));
+            status.put("msg", "SUCCESS :: reload user info");
+            getUserInfo();
         }
-        return ret;
     }
 
-    // Logea una cuenta en el portal y carga la informacion del usuario
-    public int login(String userName, String password, String captchaCode,
-                     Map<String, String> cookies) throws IOException {
-        int ret = 0;
+    // Login an account in user portal and load the user info
+    public void login(String userName, String password, String captchaCode,
+                      Map<String, String> cookies) throws IOException {
         Map<String, String> dataMap = new HashMap<>();
 
         dataMap.put("btn_submit", "");
@@ -112,27 +150,23 @@ public class UserPortal {
         dataMap.put("password_user", password);
         page = Net.connection(urlLogin, cookies).data(dataMap).post();
 
-        /* Se buscan errors en el proceso, y dependiendo del resultado de la busqueda
-         * almacena el resultado de la ejecucion en la variable status */
+        // finding errors
         status.clear();
+        status.put("function", "login");
         if (findError(page, "UP").size() != 0) {
-            ret = 1;
-            errors.clear();
             errors = findError(page, "UP");
             status.put("status", "error");
             status.put("msg", errors);
         } else {
             status.put("status", "success");
-            status.put("msg", findSuccess(page));
+            status.put("msg", "SUCCESS :: login");
+            getUserInfo();
         }
-
-        return ret;
     }
 
-    // Recarga la cuenta logeada
-    public int recharge(String rechargeCode, Map<String, String> cookies)
+    // recharge account credit
+    public void recharge(String rechargeCode, Map<String, String> cookies)
             throws IOException {
-        int ret = 0;
 
         String urlRecharge = "https://www.portal.nauta.cu/useraaa/recharge_account";
         getCSRF(urlRecharge, cookies);
@@ -142,27 +176,23 @@ public class UserPortal {
         dataMap.put("btn_submit", "");
         page = Net.connection(urlRecharge, cookies, dataMap).post();
 
-        /* Se buscan errors en el proceso, y dependiendo del resultado de la busqueda
-         * almacena el resultado de la ejecucion en la variable status */
+        // finding errors
         status.clear();
+        status.put("function", "recharge");
         if (findError(page, "UP").size() != 0) {
-            ret = 1;
-            errors.clear();
             errors = findError(page, "UP");
             status.put("status", "error");
             status.put("msg", errors);
         } else {
             status.put("status", "success");
             status.put("msg", findSuccess(page));
+            getUserInfo();
         }
-
-        return ret;
     }
 
-    // Transfiere saldo hacia otra cuenta
-    public int transfer(String mountToTransfer, String password, String accountToTransfer,
-                        Map<String, String> cookies) throws IOException {
-        int ret = 0;
+    // transfer credit to other account
+    public void transfer(String mountToTransfer, String password, String accountToTransfer,
+                         Map<String, String> cookies) throws IOException {
 
         String urlTransfer = "https://www.portal.nauta.cu/useraaa/transfer_balance";
         getCSRF(urlTransfer, cookies);
@@ -172,29 +202,45 @@ public class UserPortal {
         dataMap.put("password_user", password);
         dataMap.put("id_cuenta", accountToTransfer);
         dataMap.put("action", "checkdata");
-        page = Net.connection(urlTransfer, cookies, dataMap).post();
 
-        /* Se buscan errors en el proceso, y dependiendo del resultado de la busqueda
-         * almacena el resultado de la ejecucion en la variable status */
-        status.clear();
-        if (findError(page, "UP").size() != 0) {
-            ret = 1;
+        if (creditToInt(credit) == 0) {
+            // set error
             errors.clear();
-            errors = findError(page, "UP");
+            errors.add("Usted no tiene saldo en la cuenta. Por favor recargue.");
+            status.clear();
+            status.put("function", "transfer");
             status.put("status", "error");
             status.put("msg", errors);
-        } else {
-            status.put("status", "success");
-            status.put("msg", findSuccess(page));
-        }
+        } else if (creditToInt(credit) == Integer.parseInt(mountToTransfer.replace(",", "")) ||
+                creditToInt(credit) > Integer.parseInt(mountToTransfer.replace(",", ""))) {
+            page = Net.connection(urlTransfer, cookies, dataMap).post();
 
-        return ret;
+            // finding errors
+            status.clear();
+            status.put("function", "transfer");
+            if (findError(page, "UP").size() != 0) {
+                errors = findError(page, "UP");
+                status.put("status", "error");
+                status.put("msg", errors);
+            } else {
+                status.put("status", "success");
+                status.put("msg", findSuccess(page));
+                getUserInfo();
+            }
+        } else {
+            // set error
+            errors.clear();
+            errors.add("Su saldo es inferior a la cantidad que quiere transferir.");
+            status.clear();
+            status.put("function", "transfer");
+            status.put("status", "error");
+            status.put("msg", errors);
+        }
     }
 
-    // Cambia la contrasena de la cuenta logeada
-    public int changePassword(String oldPassword, String newPassword, Map<String, String> cookies)
+    // change account password
+    public void changePassword(String oldPassword, String newPassword, Map<String, String> cookies)
             throws IOException {
-        int ret = 0;
 
         String urlChangePassword = "https://www.portal.nauta.cu/useraaa/change_password";
         getCSRF(urlChangePassword, cookies);
@@ -206,27 +252,23 @@ public class UserPortal {
         dataMap.put("btn_submit", "");
         page = Net.connection(urlChangePassword, cookies, dataMap).post();
 
-        /* Se buscan errors en el proceso, y dependiendo del resultado de la busqueda
-         * almacena el resultado de la ejecucion en la variable status */
+        // finding errors
         status.clear();
+        status.put("function", "changePassword");
         if (findError(page, "UP").size() != 0) {
-            ret = 1;
-            errors.clear();
             errors = findError(page, "UP");
             status.put("status", "error");
             status.put("msg", errors);
         } else {
             status.put("status", "success");
             status.put("msg", findSuccess(page));
+            getUserInfo();
         }
-
-        return ret;
     }
 
-    // Cambia la contrasena de la cuenta de correo asociada a la cuenta logeada
-    public int changeEmailPassword(String oldPassword, String newPassword, Map<String, String> cookies)
+    // changed email account password
+    public void changeEmailPassword(String oldPassword, String newPassword, Map<String, String> cookies)
             throws IOException {
-        int ret = 0;
 
         String urlChangePassword = "https://www.portal.nauta.cu/email/change_password";
         getCSRF(urlChangePassword, cookies);
@@ -238,24 +280,21 @@ public class UserPortal {
         dataMap.put("btn_submit", "");
         page = Net.connection(urlChangePassword, cookies, dataMap).post();
 
-        /* Se buscan errors en el proceso, y dependiendo del resultado de la busqueda
-         * almacena el resultado de la ejecucion en la variable status */
+        // finding errors
         status.clear();
+        status.put("function", "changeEmailAccount");
         if (findError(page, "UP").size() != 0) {
-            ret = 1;
-            errors.clear();
             errors = findError(page, "UP");
             status.put("status", "error");
             status.put("msg", errors);
         } else {
             status.put("status", "success");
             status.put("msg", findSuccess(page));
+            getUserInfo();
         }
-
-        return ret;
     }
 
-    // Devuelve la lista de conexiones (del ano-mes especificado) de la cuenta logeada
+    // return connections list on the year-month selected
     public List<Connection> getConnections(int year, int month,
                                            Map<String, String> cookies) throws IOException {
         List<Connection> connections = new ArrayList<>();
@@ -289,24 +328,24 @@ public class UserPortal {
         if (connections.size() == 0) {
             page = Net.connection(urlServiceDetailSummary, cookies, dataMap).post();
 
-            /* Se buscan errors en el proceso, y dependiendo del resultado de la busqueda
-             * almacena el resultado de la ejecucion en la variable status */
+            // finding errors
             status.clear();
+            status.put("function", "getConnections");
             if (findError(page, "UP").size() != 0) {
-                errors.clear();
                 errors = findError(page, "UP");
                 status.put("status", "error");
                 status.put("msg", errors);
             } else {
                 status.put("status", "success");
-                status.put("msg", findSuccess(page));
+                status.put("msg", "SUCCESS :: get connections");
+                getUserInfo();
             }
         }
 
         return connections;
     }
 
-    // Devuelve la lista de recargas (del ano-mes especificado) de la cuenta logeada
+    // return recharges list on the year-month selected
     public List<Recharge> getRecharges(int year, int month,
                                        Map<String, String> cookies) throws IOException {
         List<Recharge> recharges = new ArrayList<>();
@@ -339,24 +378,24 @@ public class UserPortal {
         if (recharges.size() == 0) {
             page = Net.connection(urlRechargeDetailSummary, cookies, dataMap).post();
 
-            /* Se buscan errors en el proceso, y dependiendo del resultado de la busqueda
-             * almacena el resultado de la ejecucion en la variable status */
+            // finding errors
             status.clear();
+            status.put("function", "getRecharges");
             if (findError(page, "UP").size() != 0) {
-                errors.clear();
                 errors = findError(page, "UP");
                 status.put("status", "error");
                 status.put("msg", errors);
             } else {
                 status.put("status", "success");
-                status.put("msg", findSuccess(page));
+                status.put("msg", "SUCCESS :: get recharges");
+                getUserInfo();
             }
         }
 
         return recharges;
     }
 
-    // Devuelve la lista de transferencias (del ano-mes especificado) de la cuenta logeada
+    // return transfers list on the year-month selected
     public List<Transfer> getTransfers(int year, int month, Map<String, String> cookies)
             throws IOException {
         List<Transfer> transfers = new ArrayList<>();
@@ -388,180 +427,83 @@ public class UserPortal {
         if (transfers.size() == 0) {
             page = Net.connection(urlTransferDetailSummary, cookies, dataMap).post();
 
-            /* Se buscan errors en el proceso, y dependiendo del resultado de la busqueda
-             * almacena el resultado de la ejecucion en la variable status */
+            // finding errors
             status.clear();
+            status.put("function", "getTransfers");
             if (findError(page, "UP").size() != 0) {
-                errors.clear();
                 errors = findError(page, "UP");
                 status.put("status", "error");
                 status.put("msg", errors);
             } else {
                 status.put("status", "success");
-                status.put("msg", findSuccess(page));
+                status.put("msg", "SUCCESS :: get transfers");
+                getUserInfo();
             }
         }
 
         return transfers;
     }
 
-    // Cierra la session de la cuenta logeada
-    public int logout(Map<String, String> cookies) throws IOException {
-        int ret = 0;
+    // logout
+    public void logout(Map<String, String> cookies) throws IOException {
         String urlLogout = "https://www.portal.nauta.cu/user/logout";
         page = Net.connection(urlLogout, cookies).get();
 
-        /* Se buscan errors en el proceso, y dependiendo del resultado de la busqueda
-         * almacena el resultado de la ejecucion en la variable status */
+        // finding errors
         status.clear();
+        status.put("function", "logout");
         if (findError(page, "UP").size() != 0) {
-            ret = 1;
-            errors.clear();
             errors = findError(page, "UP");
             status.put("status", "error");
             status.put("msg", errors);
         } else {
             status.put("status", "success");
-            status.put("msg", "La session fue  cerrada correctamente!");
+            status.put("msg", "SUCCESS :: logout");
+            getUserInfo();
         }
-
-        return ret;
     }
 
-    // Devuelve el nombre de usuario de la cuenta logeada
-    public String userName() {
-        String userName = null;
-
+    // load user info
+    private void getUserInfo() {
         Element cardPanel = Utils.getCardPanel(page);
         Elements userTemp = cardPanel.select("div.m6");
         for (Element info : userTemp) {
             String temp = info.select("h5").text();
-            if (temp.equals("Usuario")) {
-                userName = info.select("p").text();
-                break;
+            switch (temp) {
+                case "Usuario":
+                    // Assigning userName value
+                    userName = info.select("p").text();
+                    break;
+                case "Fecha de bloqueo":
+                    // Assigning blockDate value
+                    blockDate = info.select("p").text();
+                    break;
+                case "Fecha de eliminación":
+                    // Assigning delDate value
+                    delDate = info.select("p").text();
+                    break;
+                case "Tipo de cuenta":
+                    // Assigning accountType value
+                    accountType = info.select("p").text();
+                    break;
+                case "Tipo de servicio":
+                    // Assigning serviceType value
+                    serviceType = info.select("p").text();
+                    break;
+                case "Saldo disponible":
+                    // Assigning credit value
+                    credit = info.select("p").text();
+                    break;
+                case "Tiempo disponible de la cuenta":
+                    // Assigning time value
+                    time = info.select("p").text();
+                    break;
+                case "Cuenta de correo":
+                    // Assigning mailAccount value
+                    mailAccount = info.select("p").text();
+                    break;
             }
         }
-
-        return userName;
-    }
-
-    // Devuelve la fecha de bloqueo de la cuenta logeada
-    public String blockDate() {
-        String blockDate = null;
-
-        Element cardPanel = Utils.getCardPanel(page);
-        Elements userTemp = cardPanel.select("div.m6");
-        for (Element info : userTemp) {
-            String temp = info.select("h5").text();
-            if (temp.equals("Fecha de bloqueo")) {
-                blockDate = info.select("p").text();
-                break;
-            }
-        }
-
-        return blockDate;
-    }
-
-    // Devuelve la fecha de eliminacion de la cuenta logeada
-    public String delDate() {
-        String delDate = null;
-
-        Element cardPanel = Utils.getCardPanel(page);
-        Elements userTemp = cardPanel.select("div.m6");
-        for (Element info : userTemp) {
-            String temp = info.select("h5").text();
-            if (temp.equals("Fecha de eliminación")) {
-                delDate = info.select("p").text();
-                break;
-            }
-        }
-
-        return delDate;
-    }
-
-    // Devuelve el tipo de la cuenta logeada
-    public String accountType() {
-        String accountType = null;
-
-        Element cardPanel = Utils.getCardPanel(page);
-        Elements userTemp = cardPanel.select("div.m6");
-        for (Element info : userTemp) {
-            String temp = info.select("h5").text();
-            if (temp.equals("Tipo de cuenta")) {
-                accountType = info.select("p").text();
-                break;
-            }
-        }
-
-        return accountType;
-    }
-
-    // Devuelve el tipo de servicio de la cuenta logeada
-    public String serviceType() {
-        String serviceType = null;
-
-        Element cardPanel = Utils.getCardPanel(page);
-        Elements userTemp = cardPanel.select("div.m6");
-        for (Element info : userTemp) {
-            String temp = info.select("h5").text();
-            if (temp.equals("Tipo de servicio")) {
-                serviceType = info.select("p").text();
-                break;
-            }
-        }
-
-        return serviceType;
-    }
-
-    // Devuelve el saldo disponible de la cuenta logeada
-    public String credit() {
-        String credit = null;
-
-        Element cardPanel = Utils.getCardPanel(page);
-        Elements userTemp = cardPanel.select("div.m6");
-        for (Element info : userTemp) {
-            String temp = info.select("h5").text();
-            if (temp.equals("Saldo disponible")) {
-                credit = info.select("p").text();
-                break;
-            }
-        }
-
-        return credit;
-    }
-
-    // Devuelve el tiempo disponible de la cuenta logeada
-    public String time() {
-        String time = null;
-
-        Element cardPanel = Utils.getCardPanel(page);
-        Elements userTemp = cardPanel.select("div.m6");
-        for (Element info : userTemp) {
-            String temp = info.select("h5").text();
-            if (temp.equals("Tiempo disponible de la cuenta")) {
-                time = info.select("p").text();
-                break;
-            }
-        }
-
-        return time;
-    }
-
-    // Devuelve la cuenta de correo vinculada a la cuenta logeada
-    public String mailAccount() {
-        String mailAccount = null;
-
-        Element cardPanel = Utils.getCardPanel(page);
-        Elements userTemp = cardPanel.select("div.m6");
-        for (Element info : userTemp) {
-            String temp = info.select("h5").text();
-            if (temp.equals("Cuenta de correo")) {
-                mailAccount = info.select("p").text();
-                break;
-            }
-        }
-
-        return mailAccount;
     }
 
 }
