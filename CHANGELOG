@@ -12,3 +12,13 @@
 * Inicia session. (Portal Cautivo)
 * Actualiza el tiempo disponible. (Portal Cautivo)
 * Cierra session. (Portal Cautivo)
+
+= 0.1.0-r0.1 (20200210)
+* Inicia sesión. (P)ortal MiCubacel)
+* Restablece contraseña. (P)ortal MiCubacel)
+* Registra un nuevo usuario. (P)ortal MiCubacel)
+* Obtiene información de la cuenta. (P)ortal MiCubacel)
+* Compra paquetes. (P)ortal MiCubacel)
+* Consulta paquetes comprados. (P)ortal MiCubacel)
+* Solicita el servicio de adelanta saldo. (P)ortal MiCubacel)
+* Administra el servicio de Plan Amigo. (P)ortal MiCubacel)
