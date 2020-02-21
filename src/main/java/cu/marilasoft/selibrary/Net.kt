@@ -51,7 +51,7 @@ object Net {
     }
 
     @Throws(IOException::class)
-    fun getCookies(url: String): Map<String, String> {
+    fun getCookies(url: String): MutableMap<String, String> {
         return connection(url).execute().cookies()
     }
 

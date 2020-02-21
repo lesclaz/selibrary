@@ -14,7 +14,7 @@
 * Cierra session. (Portal Cautivo)
 
 = 0.1.0-r0.1 (20200210)
-* Inicia sesión. (P)ortal MiCubacel)
+* Inicia sesión. (Portal MiCubacel)
 * Restablece contraseña. (P)ortal MiCubacel)
 * Registra un nuevo usuario. (P)ortal MiCubacel)
 * Obtiene información de la cuenta. (P)ortal MiCubacel)
@@ -22,3 +22,6 @@
 * Consulta paquetes comprados. (P)ortal MiCubacel)
 * Solicita el servicio de adelanta saldo. (P)ortal MiCubacel)
 * Administra el servicio de Plan Amigo. (P)ortal MiCubacel)
+
+= 0.2.0-r0.1 (20200210)
+* Tansformacion de las secciones en interfaces

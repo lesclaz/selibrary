@@ -10,24 +10,28 @@ import cu.marilasoft.selibrary.utils.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
-import java.io.IOException
+import java.io.*
 import java.net.UnknownHostException
 import java.util.*
 import javax.net.ssl.SSLHandshakeException
+import kotlin.collections.HashMap
 
 
-class UserPortal {
-    private lateinit var csrf: String
-    private lateinit var page: Document
-    private lateinit var homePage: Document
-    var cookies: Map<String, String>? = null
-    var captchaImg: ByteArray? = null
+interface UserPortal {
+
+    var cookies: MutableMap<String, String>
+        get() = mCookies
+        set(value) {
+            mCookies = value
+        }
+    val captchaImage: ByteArray?
+        get() = captchaImg
 
     private val m6: Elements
         get() {
             return homePage.select("div.card-panel").first().select("div.m6")
         }
-    val userName: String?
+    val user: String?
         get() {
             for (element in m6) {
                 when (element.select("h5").text()) {
@@ -100,6 +104,26 @@ class UserPortal {
             return null
         }
 
+    @Throws(IOException::class)
+    fun downloadCaptcha(path: String) {
+        try {
+            var out: ByteArrayOutputStream? = null
+            BufferedInputStream(ByteArrayInputStream(captchaImage)).use { `in` ->
+                out = ByteArrayOutputStream()
+                val buf = ByteArray(1024)
+                var n: Int
+                while (-1 != `in`.read(buf).also { n = it }) {
+                    out!!.write(buf, 0, n)
+                }
+                out!!.close()
+            }
+            val response = out!!.toByteArray()
+            FileOutputStream(path).use { fos -> fos.write(response) }
+        } catch (ex: IOException) {
+            ex.printStackTrace(System.out)
+        }
+    }
+
     @Throws(IOException::class, CommunicationException::class)
     private fun getCSRF(url: String, cookies: Map<String, String>) {
         try {
@@ -136,8 +160,32 @@ class UserPortal {
     @Throws(IOException::class, CommunicationException::class)
     fun preLogin() {
         try {
-            cookies = getCookies(UP_LOGIN_URL)
-            loadLogin(cookies!!)
+            mCookies = getCookies(UP_LOGIN_URL)
+            loadLogin(mCookies)
+        } catch (e: UnknownHostException) {
+            throw CommunicationException("${Constants.EXCEPTION_UNKNOWN_HOST} ${e.message}")
+        } catch (e2: SSLHandshakeException) {
+            throw CommunicationException(Constants.EXCEPTION_SSL_HANDSHAKE)
+        } catch (e3: NullPointerException) {
+            throw CommunicationException(Constants.EXCEPTION_NULL_POINTER)
+        }
+    }
+
+    @Throws(IOException::class, CommunicationException::class)
+    fun login(user: String, password: String, captchaCode: String, cookies: Map<String, String>) {
+        try {
+            val dataMap: MutableMap<String, String> = HashMap()
+            dataMap["btn_submit"] = ""
+            dataMap["captcha"] = captchaCode
+            dataMap["csrf"] = csrf
+            dataMap["login_user"] = user
+            dataMap["password_user"] = password
+            homePage = connection(UP_LOGIN_URL, dataMap, cookies).post()
+
+            if (findError(homePage, "UP")!!.isNotEmpty()) {
+                val errors = findError(homePage, "UP")
+                throw LoginException(errors.toString())
+            }
         } catch (e: UnknownHostException) {
             throw CommunicationException("${Constants.EXCEPTION_UNKNOWN_HOST} ${e.message}")
         } catch (e2: SSLHandshakeException) {
@@ -165,32 +213,11 @@ class UserPortal {
         }
     }
 
-    @Throws(IOException::class)
-    fun login(userName: String, password: String, captchaCode: String, cookies: Map<String, String>) {
-        try {
-            val dataMap: MutableMap<String, String> = HashMap()
-            dataMap["btn_submit"] = ""
-            dataMap["captcha"] = captchaCode
-            dataMap["csrf"] = csrf
-            dataMap["login_user"] = userName
-            dataMap["password_user"] = password
-            homePage = connection(UP_LOGIN_URL, dataMap, cookies).post()
-
-            if (findError(homePage, "UP")!!.isNotEmpty()) {
-                val errors = findError(homePage, "UP")
-                throw LoginException(errors.toString())
-            }
-        } catch (e: UnknownHostException) {
-            throw CommunicationException("${Constants.EXCEPTION_UNKNOWN_HOST} ${e.message}")
-        } catch (e2: SSLHandshakeException) {
-            throw CommunicationException(Constants.EXCEPTION_SSL_HANDSHAKE)
-        } catch (e3: NullPointerException) {
-            throw CommunicationException(Constants.EXCEPTION_NULL_POINTER)
-        }
-    }
-
-    @Throws(IOException::class)
+    @Throws(IOException::class, CommunicationException::class)
     fun recharge(rechargeCode: String, cookies: Map<String, String>) {
+        if (rechargeCode.length != 12 && rechargeCode.length != 16) {
+            throw CodeException("El codigo debe tener 12 o 16 digitos")
+        }
         try {
             getCSRF(UP_RECHARGE_URL, cookies)
             val dataMap: MutableMap<String, String> = HashMap()
@@ -211,10 +238,11 @@ class UserPortal {
         }
     }
 
-    @Throws(IOException::class)
-    fun transfer(credit: String, mountToTransfer: String, password: String, accountToTransfer: String,
-                 cookies: Map<String, String>) {
+    @Throws(IOException::class, CommunicationException::class)
+    fun transfer(mountToTransfer: String, password: String, accountToTransfer: String,
+                 cookies: Map<String, String>, loadCredit: Boolean = false) {
         try {
+            if (loadCredit) loadUserInfo(cookies)
             getCSRF(UP_TRANSFER_URL, cookies)
             val dataMap: MutableMap<String, String> = HashMap()
             dataMap["csrf"] = csrf
@@ -222,17 +250,15 @@ class UserPortal {
             dataMap["password_user"] = password
             dataMap["id_cuenta"] = accountToTransfer
             dataMap["action"] = "checkdata"
-            if (creditToInt(credit) == 0) { // set error
+            if (credit != null && creditToInt(credit!!) == 0) { // set error
                 throw OperationException("Usted no tiene saldo en la cuenta. Por favor recargue.")
-            } else if (creditToInt(credit) == mountToTransfer.replace(",", "").toInt() ||
-                    creditToInt(credit) > mountToTransfer.replace(",", "").toInt()) {
-                page = connection(UP_TRANSFER_URL, dataMap, cookies).post()
-                if (findError(page, "UP")!!.isNotEmpty()) {
-                    val errors = findError(page, "UP")
-                    throw OperationException(errors.toString())
-                }
-            } else {
+            } else if (credit != null && creditToInt(credit!!) < mountToTransfer.replace(",", "").toInt()) {
                 throw OperationException("Su saldo es inferior a la cantidad que quiere transferir.")
+            }
+            page = connection(UP_TRANSFER_URL, dataMap, cookies).post()
+            if (findError(page, "UP")!!.isNotEmpty()) {
+                val errors = findError(page, "UP")
+                throw OperationException(errors.toString())
             }
         } catch (e: UnknownHostException) {
             throw CommunicationException("${Constants.EXCEPTION_UNKNOWN_HOST} ${e.message}")
@@ -243,8 +269,8 @@ class UserPortal {
         }
     }
 
-    @Throws(IOException::class)
-    fun changePassword(oldPassword: String, newPassword: String, cookies: Map<String, String>) {
+    @Throws(IOException::class, CommunicationException::class)
+    fun changePassword(oldPassword: String, newPassword: String, cookies: MutableMap<String, String>) {
         try {
             getCSRF(UP_CHANGE_PASSWORD_URL, cookies)
             val dataMap: MutableMap<String, String> = HashMap()
@@ -267,8 +293,8 @@ class UserPortal {
         }
     }
 
-    @Throws(IOException::class)
-    fun changeEmailPassword(oldPassword: String, newPassword: String, cookies: Map<String, String>) {
+    @Throws(IOException::class, CommunicationException::class)
+    fun changeEmailPassword(oldPassword: String, newPassword: String, cookies: MutableMap<String, String>) {
         try {
             getCSRF(UP_CHANGE_EMAIL_PASSWORD_URL, cookies)
             val dataMap: MutableMap<String, String> = HashMap()
@@ -291,10 +317,10 @@ class UserPortal {
         }
     }
 
-    @Throws(IOException::class)
-    fun getConnections(year: Int, month: Int, cookies: Map<String, String>): List<Connection>? {
+    @Throws(IOException::class, CommunicationException::class)
+    fun getConnections(year: Int, month: Int, cookies: Map<String, String>): List<Connection> {
         try {
-            val connections: MutableList<Connection> = ArrayList<Connection>()
+            val connections: MutableList<Connection> = ArrayList()
             val yearMonth: String = buildYearMonth(year, month)
             getCSRF(UP_SERVICE_DETAIL_URL, cookies)
             val dataMap: MutableMap<String, String> = HashMap()
@@ -331,8 +357,8 @@ class UserPortal {
         }
     }
 
-    @Throws(IOException::class)
-    fun getRecharges(year: Int, month: Int, cookies: Map<String, String>): List<Recharge>? {
+    @Throws(IOException::class, CommunicationException::class)
+    fun getRecharges(year: Int, month: Int, cookies: Map<String, String>): List<Recharge> {
         try {
             val recharges: MutableList<Recharge> = ArrayList()
             val yearMonth = buildYearMonth(year, month)
@@ -370,8 +396,8 @@ class UserPortal {
         }
     }
 
-    @Throws(IOException::class)
-    fun getTransfers(year: Int, month: Int, cookies: Map<String, String>): List<Transfer>? {
+    @Throws(IOException::class, CommunicationException::class)
+    fun getTransfers(year: Int, month: Int, cookies: Map<String, String>): List<Transfer> {
         try {
             val transfers: MutableList<Transfer> = ArrayList<Transfer>()
             val yearMonth = buildYearMonth(year, month)
@@ -408,7 +434,7 @@ class UserPortal {
         }
     }
 
-    @Throws(IOException::class)
+    @Throws(IOException::class, CommunicationException::class)
     fun logout(cookies: Map<String, String>) {
         try {
             page = connection(UP_LOGOUT_URL, cookies = cookies).get()
@@ -426,6 +452,12 @@ class UserPortal {
     }
 
     companion object {
+        private lateinit var csrf: String
+        private lateinit var page: Document
+        private lateinit var homePage: Document
+        private var mCookies: MutableMap<String, String> = HashMap()
+        private var captchaImg: ByteArray? = null
+
         const val UP_LOGIN_URL = "https://www.portal.nauta.cu/user/login/es-es"
         const val UP_LOGOUT_URL = "https://www.portal.nauta.cu/user/logout"
         const val UP_CAPTCHA_URL = "https://www.portal.nauta.cu/captcha/?"
