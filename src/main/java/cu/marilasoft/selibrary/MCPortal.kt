@@ -2,7 +2,7 @@ package cu.marilasoft.selibrary
 
 import com.google.gson.JsonParser
 import cu.marilasoft.selibrary.models.FamilyAndFriends
-import cu.marilasoft.selibrary.models.NavigationPackage
+import cu.marilasoft.selibrary.models.ETECSAPackage
 import cu.marilasoft.selibrary.models.Notice
 import cu.marilasoft.selibrary.models.Product
 import cu.marilasoft.selibrary.utils.*
@@ -291,17 +291,22 @@ interface MCPortal {
         }
     }
 
-    fun getBuys(): ArrayList<NavigationPackage> {
-        val buys = ArrayList<NavigationPackage>()
+    fun getBuys(): ArrayList<ETECSAPackage> {
+        val buys = ArrayList<ETECSAPackage>()
         for (element in myAccountPage.select("div[class=\"mad_accordion_container\"]")) {
             for (jElement in element.select("div [id=\"multiAccordion1\"]")) {
                 for ((count, title) in jElement.select("h3[class=\"ac_block_title\"]").withIndex()) {
-                    buys.add(NavigationPackage(jElement, count))
+                    val ePackage = ETECSAPackage(jElement.select("div[class=\"ac_block\"]")[count],
+                    true)
+                    ePackage.title = title.text()
+                    buys.add(ePackage)
                 }
             }
             for (jElement in element.select("div [id=\"multiAccordion\"]")) {
                 for ((count, title) in jElement.select("h3[class=\"ac_block_title\"]").withIndex()) {
-                    buys.add(NavigationPackage(jElement, count))
+                    val ePackage = ETECSAPackage(jElement.select("div[class=\"ac_block\"]")[count])
+                    ePackage.title = title.text()
+                    buys.add(ePackage)
                 }
             }
         }
