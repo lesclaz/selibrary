@@ -84,7 +84,7 @@ class PhoneNumberFF(private val element: Element, private val subscriber: String
     }
 
     @Throws(IOException::class, CommunicationException::class, OperationException::class)
-    fun delete(phoneNumber: String, cookies: MutableMap<String, String>) {
+    fun delete(cookies: MutableMap<String, String>) {
         try {
             val dataMap = HashMap<String, String>()
             dataMap["numberToDelete"] = phoneNumber

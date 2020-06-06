@@ -78,7 +78,7 @@ fun findError(page: Document, _type: String): List<String>? {
     return errors
 }
 
-fun getSessionParameters(page: Document): Map<String, Any?>? {
+fun getSessionParameters(page: Document): MutableMap<String, Any?> {
     val sessionParameters: MutableMap<String, Any?> = HashMap()
     var str: String? = null
     for (wholeData in page.getElementsByTag("script").first().dataNodes()) {
@@ -88,20 +88,20 @@ fun getSessionParameters(page: Document): Map<String, Any?>? {
         val updateAvailableTimeParameters = getUpdateAvailableTimeParameters(str)
         val logoutParameters = getLogoutParameters(str)
         sessionParameters["updateTimeUrl"] = updateAvailableTimeParameters[0]
-        sessionParameters["updateTimeCSRFHW"] = updateAvailableTimeParameters[1]
-        sessionParameters["updateTimeOp"] = updateAvailableTimeParameters[2]
-        sessionParameters["updateTimeOp1"] = updateAvailableTimeParameters[3]
-        sessionParameters["updateTimeOp2"] = updateAvailableTimeParameters[4]
-        sessionParameters["logoutUrl"] = logoutParameters[0]
-        sessionParameters["logoutATTRIBUTE_UUID"] = logoutParameters[1]
+        sessionParameters["CSRFHW"] = updateAvailableTimeParameters[1]
+        sessionParameters["Op"] = updateAvailableTimeParameters[2]
+        sessionParameters["Op1"] = updateAvailableTimeParameters[3]
+        sessionParameters["Op2"] = updateAvailableTimeParameters[4]
+        sessionParameters["ACTION_LOGOUT"] = logoutParameters[0]
+        sessionParameters["ATTRIBUTE_UUID"] = logoutParameters[1]
         sessionParameters["logoutwlanuserip"] = logoutParameters[2]
         sessionParameters["logoutssid"] = logoutParameters[3]
-        sessionParameters["logoutloggerId"] = logoutParameters[4]
-        sessionParameters["logoutdomain"] = logoutParameters[5]
-        sessionParameters["logoutusername"] = logoutParameters[6]
-        sessionParameters["logoutwlanacname"] = logoutParameters[7]
-        sessionParameters["logoutwlanmac"] = logoutParameters[8]
-        sessionParameters["logoutremove"] = logoutParameters[9]
+        sessionParameters["LOGGER_ID"] = logoutParameters[4]
+        sessionParameters["domain"] = logoutParameters[5]
+        sessionParameters["username"] = logoutParameters[6]
+        sessionParameters["wlanacname"] = logoutParameters[7]
+        sessionParameters["wlanmac"] = logoutParameters[8]
+        sessionParameters["remove"] = logoutParameters[9]
     }
     return sessionParameters
 }
@@ -195,11 +195,8 @@ fun getLogoutParameters(str: String): Array<String?> {
             parameters[6] = substring.substring(0, indexOf)
         }
     }
-    parameters[7] = ""
-    parameters[8] = ""
-    parameters[9] = "1"
-    parameters[0] = parameters[0].toString() + "ATTRIBUTE_UUID=" + parameters[1] + "&wlanuserip=" + parameters[2] + "&ssid=" + parameters[3] +
-            "&loggerId=" + parameters[4] + "&domain=" + parameters[5] + "&username=" + parameters[6] + "&wlanacname=" +
-            parameters[7] + "&wlanmac=" + parameters[8] + "&remove=" + parameters[9]
+    parameters[0] = "https://secure.etecsa.net:8443/${parameters[0].toString()}ATTRIBUTE_UUID=${parameters[1]}" +
+            "&wlanuserip=${parameters[2]}&ssid=${parameters[3]}&loggerId=${parameters[4]}&domain=${parameters[5]}" +
+            "&username=${parameters[6]}&wlanacname=&wlanmac=&remove=1}"
     return parameters
 }
