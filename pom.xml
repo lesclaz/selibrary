@@ -6,11 +6,11 @@
 
   <groupId>cu.marilasoft.selibrary</groupId>
   <artifactId>selibrary</artifactId>
-  <version>0.1.0-r0.1-BETA</version>
+  <version>0.3.1</version>
 
   <name>selibrary</name>
   <!-- FIXME change it to the project's website -->
-  <url>http://www.example.com</url>
+  <url>https://github.com/marilasoft/selibrary/</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
