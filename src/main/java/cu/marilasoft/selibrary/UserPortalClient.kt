@@ -17,7 +17,7 @@ import javax.net.ssl.SSLHandshakeException
 import kotlin.collections.HashMap
 
 
-interface UserPortal {
+interface UserPortalClient {
 
     var cookies: MutableMap<String, String>
         get() = mCookies
