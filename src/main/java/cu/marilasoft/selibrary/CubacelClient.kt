@@ -14,7 +14,7 @@ import java.io.IOException
 import java.net.UnknownHostException
 import javax.net.ssl.SSLHandshakeException
 
-interface MCPortal {
+interface CubacelClient {
     var cookies: MutableMap<String, String>
         get() = mCookies
         set(value) {
@@ -184,11 +184,33 @@ interface MCPortal {
                     myAccountPage.select("div[id=\"fnfBlock\"]").first()
                             .select("input[id=\"fnfBlockValue\"]").first().attr("value"))
         }
+    val buys: ArrayList<ETECSAPackage>
+        get() {
+            val buys = ArrayList<ETECSAPackage>()
+            for (element in myAccountPage.select("div[class=\"mad_accordion_container\"]")) {
+                for (jElement in element.select("div [id=\"multiAccordion1\"]")) {
+                    for ((count, title) in jElement.select("h3[class=\"ac_block_title\"]").withIndex()) {
+                        val ePackage = ETECSAPackage(jElement.select("div[class=\"ac_block\"]")[count],
+                                true)
+                        ePackage.title = title.text()
+                        buys.add(ePackage)
+                    }
+                }
+                for (jElement in element.select("div [id=\"multiAccordion\"]")) {
+                    for ((count, title) in jElement.select("h3[class=\"ac_block_title\"]").withIndex()) {
+                        val ePackage = ETECSAPackage(jElement.select("div[class=\"ac_block\"]")[count])
+                        ePackage.title = title.text()
+                        buys.add(ePackage)
+                    }
+                }
+            }
+            return buys
+        }
 
     @Throws(IOException::class, CommunicationException::class)
     fun loadHomePage(cookies: MutableMap<String, String>?) {
         try {
-            var response = Net.connection(Constants.MCP_BASE_URL, cookies = cookies, verify = false).execute()
+            var response = Net.connection(url = Constants.MCP_BASE_URL, cookies = mCookies, verify = false).execute()
             currentPage = response.parse()
             var urlSpanish = ""
             val urls: Elements = currentPage.select("a[class=\"link_msdp langChange\"]")
@@ -197,10 +219,10 @@ interface MCPortal {
                     urlSpanish = url.attr("href")
                 }
             }
-            this.cookies = updateCookies(response.cookies(), this.cookies)
+            mCookies = updateCookies(response.cookies(), mCookies)
             if (urlsMCP.isNotEmpty()) urlsMCP.clear()
             urlsMCP["home"] = Constants.MCP_BASE_URL + urlSpanish
-            response = Net.connection(Constants.MCP_BASE_URL + urlSpanish, cookies = this.cookies, verify = false).execute()
+            response = Net.connection(url = Constants.MCP_BASE_URL + urlSpanish, cookies = mCookies, verify = false).execute()
             currentPage = response.parse()
             val div = currentPage.select("div[class=\"collapse navbar-collapse navbar-main-collapse\"]").first()
             val lis = div.select("li")
@@ -212,7 +234,7 @@ interface MCPortal {
                     "Soporte" -> urlsMCP["support"] = Constants.MCP_BASE_URL + li.select("a").first().attr("href")
                 }
             }
-            this.cookies = updateCookies(response.cookies(), this.cookies)
+            mCookies = updateCookies(response.cookies(), mCookies)
         } catch (e: UnknownHostException) {
             throw CommunicationException("${Constants.EXCEPTION_UNKNOWN_HOST} ${e.message}")
         } catch (e2: SSLHandshakeException) {
@@ -225,16 +247,16 @@ interface MCPortal {
     @Throws(LoginException::class, CommunicationException::class)
     fun login(phoneNumber: String, password: String) {
         loadHomePage(null)
-        this.cookies = Net.connection(MCP_WELCOME_LOGIN_ES_URL, verify = false).execute().cookies()
+        mCookies = Net.connection(url = MCP_WELCOME_LOGIN_ES_URL, verify = false).execute().cookies()
         val dataMap: MutableMap<String, String> = HashMap()
         dataMap["language"] = "es_ES"
         dataMap["username"] = phoneNumber
         dataMap["password"] = password
         dataMap["uword"] = "step"
         try {
-            val response = Net.connection(MCP_LOGIN_URL, dataMap, this.cookies, false)
+            val response = Net.connection(url = MCP_LOGIN_URL, dataMap = dataMap, cookies = mCookies, verify = false)
                     .method(Connection.Method.POST).execute()
-            this.cookies = response.cookies()
+            mCookies = response.cookies()
             currentPage = response.parse()
             if (currentPage.select("div[class=\"body_wrapper error_page\"]").first() != null) {
                 val msg = currentPage.select("div[class=\"body_wrapper error_page\"]").first()
@@ -244,7 +266,7 @@ interface MCPortal {
                 throw LoginException(msg)
             } else {
                 homePage = urlsMCP["home"]!!.let {
-                    Net.connection(it, cookies = this.cookies, verify = false).get()
+                    Net.connection(url = it, cookies = this.cookies, verify = false).get()
                 }
             }
         } catch (e: UnknownHostException) {
@@ -257,15 +279,13 @@ interface MCPortal {
     }
 
     @Throws(IOException::class, CommunicationException::class)
-    fun loadMyAccount(url: String?, cookies: MutableMap<String, String>, loadHomePage: Boolean = false) {
+    fun loadMyAccount(url: String?, loadHomePage: Boolean = false) {
         try {
             val urlAction: String = if (loadHomePage) {
-                this.cookies = cookies
-                loadHomePage(cookies)
+                loadHomePage(mCookies)
                 urlsMCP["myAccount"].toString()
             } else url!!
-            if (!loadHomePage) this.cookies = cookies
-            myAccountPage = Net.connection(urlAction, cookies = this.cookies, verify = false).get()
+            myAccountPage = Net.connection(url = urlAction, cookies = mCookies, verify = false).get()
             urlsMCP["changeBonusServices"] = Constants.MCP_BASE_URL + myAccountPage
                     .select("form[id=\"toogle-internet\"]")
                     .first().attr("action")
@@ -291,30 +311,8 @@ interface MCPortal {
         }
     }
 
-    fun getBuys(): ArrayList<ETECSAPackage> {
-        val buys = ArrayList<ETECSAPackage>()
-        for (element in myAccountPage.select("div[class=\"mad_accordion_container\"]")) {
-            for (jElement in element.select("div [id=\"multiAccordion1\"]")) {
-                for ((count, title) in jElement.select("h3[class=\"ac_block_title\"]").withIndex()) {
-                    val ePackage = ETECSAPackage(jElement.select("div[class=\"ac_block\"]")[count],
-                    true)
-                    ePackage.title = title.text()
-                    buys.add(ePackage)
-                }
-            }
-            for (jElement in element.select("div [id=\"multiAccordion\"]")) {
-                for ((count, title) in jElement.select("h3[class=\"ac_block_title\"]").withIndex()) {
-                    val ePackage = ETECSAPackage(jElement.select("div[class=\"ac_block\"]")[count])
-                    ePackage.title = title.text()
-                    buys.add(ePackage)
-                }
-            }
-        }
-        return buys
-    }
-
     @Throws(IOException::class, CommunicationException::class)
-    fun changeBonusServices(isActiveBonusServices: Boolean, urlAction: String, cookies: Map<String, String>) {
+    fun changeBonusServices(isActiveBonusServices: Boolean, urlAction: String) {
         val dataMap: MutableMap<String, String> = HashMap()
         if (isActiveBonusServices) {
             dataMap["onoffswitchctm"] = "off"
@@ -323,7 +321,7 @@ interface MCPortal {
             dataMap["onoffswitchctm"] = "on"
         }
         try {
-            Net.connection(urlAction, dataMap, cookies, false).post()
+            Net.connection(url = urlAction, dataMap = dataMap, cookies = mCookies, verify = false).post()
         } catch (e: UnknownHostException) {
             throw CommunicationException("${Constants.EXCEPTION_UNKNOWN_HOST} ${e.message}")
         } catch (e2: SSLHandshakeException) {
@@ -334,9 +332,9 @@ interface MCPortal {
     }
 
     @Throws(IOException::class, CommunicationException::class)
-    fun loadProducts(urlAction: String, cookies: Map<String, String>) {
+    fun loadProducts(urlAction: String) {
         try {
-            productsPage = Net.connection(urlAction, cookies = cookies, verify = false).get()
+            productsPage = Net.connection(url = urlAction, cookies = mCookies, verify = false).get()
         } catch (e: UnknownHostException) {
             throw CommunicationException("${Constants.EXCEPTION_UNKNOWN_HOST} ${e.message}")
         } catch (e2: SSLHandshakeException) {
@@ -349,18 +347,18 @@ interface MCPortal {
     @Throws(IOException::class, CommunicationException::class)
     fun resetPassword(phoneNumber: String) {
         try {
-            cookies.clear()
-            var response = Net.connection(MCP_WELCOME_LOGIN_ES_URL, cookies = cookies, verify = false)
+            mCookies.clear()
+            var response = Net.connection(url = MCP_WELCOME_LOGIN_ES_URL, cookies = cookies, verify = false)
                     .execute()
-            cookies = updateCookies(response.cookies(), cookies)
-            response = Net.connection(MCP_FORGOT_URL, cookies = cookies, verify = false).execute()
-            cookies = updateCookies(response.cookies(), cookies)
+            mCookies = updateCookies(response.cookies(), mCookies)
+            response = Net.connection(url = MCP_FORGOT_URL, cookies = cookies, verify = false).execute()
+            mCookies = updateCookies(response.cookies(), mCookies)
             val dataMap = HashMap<String, String>()
             dataMap["mobileNumber"] = phoneNumber
             dataMap["uword"] = "step"
-            response = Net.connection(MCP_FORGOT_ACTION_URL, dataMap, cookies, false)
+            response = Net.connection(url = MCP_FORGOT_ACTION_URL, dataMap = dataMap, cookies = mCookies, verify = false)
                     .method(Connection.Method.POST).execute()
-            cookies = updateCookies(response.cookies(), cookies)
+            mCookies = updateCookies(response.cookies(), mCookies)
         } catch (e: UnknownHostException) {
             throw CommunicationException("${Constants.EXCEPTION_UNKNOWN_HOST} ${e.message}")
         } catch (e2: SSLHandshakeException) {
@@ -371,14 +369,14 @@ interface MCPortal {
     }
 
     @Throws(IOException::class, CommunicationException::class, OperationException::class)
-    fun completeResetPassword(code: String, newPassword: String, cookies: Map<String, String>) {
+    fun completeResetPassword(code: String, newPassword: String) {
         try {
             val dataMap = HashMap<String, String>()
             dataMap["oneTimecode"] = code
             dataMap["newPassword"] = newPassword
             dataMap["cnewPassword"] = newPassword
             dataMap["uword"] = "step"
-            val response = Net.connection(MCP_RESET_PASSWORD_URL, dataMap, cookies, false)
+            val response = Net.connection(url = MCP_RESET_PASSWORD_URL, dataMap = dataMap, cookies = mCookies, verify = false)
                     .method(Connection.Method.POST).execute()
             currentPage = response.parse()
             if (currentPage.select("div[class=\"body_wrapper error_page\"]").first() != null) {
@@ -388,7 +386,7 @@ interface MCPortal {
                         .select("b").first().text()
                 throw OperationException(msg)
             } else {
-                this.cookies = updateCookies(response.cookies(), this.cookies)
+                mCookies = updateCookies(response.cookies(), mCookies)
             }
         } catch (e: UnknownHostException) {
             throw CommunicationException("${Constants.EXCEPTION_UNKNOWN_HOST} ${e.message}")
@@ -402,10 +400,10 @@ interface MCPortal {
     @Throws(IOException::class, CommunicationException::class)
     fun signUp(phoneNumber: String, firstName: String, lastName: String, email: String) {
         try {
-            val response = Net.connection(MCP_WELCOME_LOGIN_ES_URL, verify = false)
+            val response = Net.connection(url = MCP_WELCOME_LOGIN_ES_URL, verify = false)
                     .execute()
-            cookies = updateCookies(response.cookies(), cookies)
-            Net.connection(MCP_SIGN_UP_URL, cookies = cookies, verify = false).execute()
+            mCookies = updateCookies(response.cookies(), mCookies)
+            Net.connection(url = MCP_SIGN_UP_URL, cookies = mCookies, verify = false).execute()
             val dataMap = HashMap<String, String>()
             dataMap["msisdn"] = phoneNumber
             dataMap["firstname"] = firstName
@@ -413,7 +411,7 @@ interface MCPortal {
             dataMap["email"] = email
             dataMap["uword"] = "step"
             dataMap["agree"] = "on"
-            Net.connection(MCP_SIGN_UP_ACTION_URL, dataMap, cookies, false)
+            Net.connection(url = MCP_SIGN_UP_ACTION_URL, dataMap = dataMap, cookies = mCookies, verify = false)
                     .method(Connection.Method.POST).execute()
         } catch (e: UnknownHostException) {
             throw CommunicationException("${Constants.EXCEPTION_UNKNOWN_HOST} ${e.message}")
@@ -425,11 +423,11 @@ interface MCPortal {
     }
 
     @Throws(IOException::class, CommunicationException::class, OperationException::class)
-    fun verifyCode(code: String, cookies: MutableMap<String, String>) {
+    fun verifyCode(code: String) {
         val dataMap = HashMap<String, String>()
         dataMap["username"] = code
         dataMap["uword"] = "step"
-        val response = Net.connection(MCP_VERIFY_REGISTRATION_CODE_URL, dataMap, cookies, false)
+        val response = Net.connection(url = MCP_VERIFY_REGISTRATION_CODE_URL, dataMap = dataMap, cookies = mCookies, verify = false)
                 .method(Connection.Method.POST).execute()
         currentPage = response.parse()
         if (currentPage.select("div[class=\"body_wrapper error_page\"]").first() != null) {
@@ -445,19 +443,17 @@ interface MCPortal {
                         .select("div[class=\"container\"]").first().text()
                 throw OperationException(msg)
             }
-        } else {
-            this.cookies = cookies
         }
     }
 
     @Throws(IOException::class, CommunicationException::class, OperationException::class)
-    fun completeSignUp(password: String, cookies: Map<String, String>) {
+    fun completeSignUp(password: String) {
         try {
             val dataMap = HashMap<String, String>()
             dataMap["newPassword"] = password
             dataMap["cnewPassword"] = password
             dataMap["uword"] = "step"
-            currentPage = Net.connection(MCP_REGISTER_PASSWORD_CREATION_URL, dataMap, cookies, false)
+            currentPage = Net.connection(url = MCP_REGISTER_PASSWORD_CREATION_URL, dataMap = dataMap, cookies = mCookies, verify = false)
                     .method(Connection.Method.POST).execute().parse()
             if (currentPage.select("div[class=\"body_wrapper error_page\"]").first() != null) {
                 try {
@@ -483,11 +479,11 @@ interface MCPortal {
     }
 
     @Throws(IOException::class, CommunicationException::class, OperationException::class)
-    fun loanMe(mount: String, subscriber: String, cookies: Map<String, String>) {
+    fun loanMe(mount: String, subscriber: String) {
         val dataMap = HashMap<String, String>()
         dataMap["subscriber"] = subscriber
         dataMap["transactionAmount"] = mount
-        val response = JsonParser().parse(Net.connection(MCP_LOAN_ME_URL, dataMap, cookies, false)
+        val response = JsonParser().parse(Net.connection(url = MCP_LOAN_ME_URL, dataMap = dataMap, cookies = mCookies, verify = false)
                 .ignoreContentType(true).get().text()).asJsonObject
         val responseCode = response["responseCode"]
         if (responseCode.toString() != "200") throw OperationException("${responseCode}: Usted no aplica!")
